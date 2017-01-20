@@ -1,0 +1,861 @@
+.ifndef jolt160_ca65_macro_pack_jinc
+jolt160_ca65_macro_pack_jinc = 3
+
+
+.include "instruction_constants.jinc"
+.include "instruction_enums.jinc"
+
+; It's a good thing I encode branch offsets at the end of group 4
+; instructions
+.macro _branch_offset instr, target
+	.local @distance, @next
+	@distance = (target) - @next
+	instr
+	.assert @distance >= -128 && @distance <= 127, error, "branch out of range"
+	.byte <@distance
+@next:
+.endmacro
+
+
+;.macro _branch_offset instr, target
+;	.local @distance, @next
+;	@distance = (target) - @next - 2
+;	instr
+;	.assert @distance >= -128 && @distance <= 127, error, "branch out of range"
+;	.byte <@distance
+;@next:
+;.endmacro
+
+;.macro _branch_offset instr, target
+;	.local @distance, @next
+;@next:
+;	@distance = (target) - @next
+;	instr
+;	.assert @distance >= -128 && @distance <= 127, error, "branch out of range"
+;	.byte <@distance
+;.endmacro
+
+.macro error_if_bad_reg_name rA, instr
+	.if .not ( .xmatch( rA, r0 ) \
+		.or .xmatch( rA, r1 ) \
+		.or .xmatch( rA, r2 ) \
+		.or .xmatch( rA, r3 ) \
+		.or .xmatch( rA, r4 ) \
+		.or .xmatch( rA, r5 ) \
+		.or .xmatch( rA, r6 ) \
+		.or .xmatch( rA, r7 ) \
+		.or .xmatch( rA, r8 ) \
+		.or .xmatch( rA, r9 ) \
+		.or .xmatch( rA, r10 ) \
+		.or .xmatch( rA, r11 ) \
+		.or .xmatch( rA, r12 ) \
+		.or .xmatch( rA, r13 ) \
+		.or .xmatch( rA, r14 ) \
+		.or .xmatch( rA, r15 ) )
+		.error .concat( "Invalid register for the ", .string(instr), \
+			" instruction" )
+	.endif
+.endmac
+
+.macro error_if_bad_reg_pair_name rAp, instr
+	.if .not ( .xmatch( rAp, r0p ) \
+		.or .xmatch( rAp, r2p ) \
+		.or .xmatch( rAp, r4p ) \
+		.or .xmatch( rAp, r6p ) \
+		.or .xmatch( rAp, r8p ) \
+		.or .xmatch( rAp, r10p ) \
+		.or .xmatch( rAp, r12p ) \
+		.or .xmatch( rAp, r14p ) \
+		.or .xmatch( rAp, sp ) \
+		.or .xmatch( rAp, lr ) )
+		.error .concat( "Invalid register pair for the ", \
+			.string(instr), " instruction" )
+	.endif
+.endmac
+
+.macro warn_if_reg_pair_is_sp rAp, instr, better_option
+	.if ( .xmatch( rAp, r10p ) \
+		.or .xmatch( rAp, sp ) )
+		.warning .concat( "CAUTION CAUTION CAUTION!!  It is SUGGESTED ", \
+			"to use the ", .string(better_option), " instruction ", \
+			"instead of the ", .string(instr), " instruction when ", \
+			"using the stack pointer as an operand!" )
+	.endif
+.endmac
+
+
+;.macro error_if_too_large_imm_value_8 imm_value_8, instr
+;	.if imm_value_8 >= $100
+;		.error .concat( "Invalid immediate value for the ", \
+;			.string(instr), " instruction" )
+;	.endif
+;.endmac
+;
+;.macro error_if_too_large_imm_value_16 imm_value_16, instr
+;	.if imm_value_16 >= $10000
+;		.error .concat( "Invalid immediate value for the ", \
+;			.string(instr), " instruction" )
+;	.endif
+;.endmac
+
+
+
+
+
+; Instruction Group 1 generation macros
+; Encoding:  0ooo aaaa iiii iiii
+
+.define encode_ig1_op( op ) lshift_masked_bits{op}, \
+	{instr_g1_op_range_hi},{instr_g1_op_range_lo}
+.define encode_ig1_rA( rA ) lshift_masked_bits{rA}, \
+	{instr_g1_ra_index_range_hi},{instr_g1_ra_index_range_lo}
+.define encode_ig1_imm_value_8( imm_value_8 ) \
+	lshift_masked_bits{imm_value_8},\
+	{instr_g1_imm_value_range_hi},{instr_g1_imm_value_range_lo}
+
+.macro gen_grp_1_instr_rA ig1_op, rA, imm_value_8
+	error_if_bad_reg_name rA, ig1_op
+	;error_if_too_large_imm_value_8_8 imm_value_8, ig1_op
+	.dbyt encode_ig1_op{ig1_op} | encode_ig1_rA{.ident(rA)} \
+		| encode_ig1_imm_value_8{imm_value_8}
+.endmac
+
+.macro gen_grp_1_instr_rAp ig1_op, rAp, imm_value_8
+	error_if_bad_reg_pair_name rAp, ig1_op
+	;error_if_too_large_imm_value_8_8 imm_value_8, ig1_op
+	.dbyt encode_ig1_op{ig1_op} | encode_ig1_rA{.ident(reg_pair_hi{rAp})} \
+		| encode_ig1_imm_value_8{imm_value_8}
+.endmac
+
+
+; Instruction Group 2 generation macros
+; Encoding:  10oo oooo aaaa bbbb
+.define encode_ig2_id( ig2_id ) lshift_masked_bits{ig2_id}, \
+	{instr_g2_id_range_hi},{instr_g2_id_range_lo}
+.define encode_ig2_op( op ) lshift_masked_bits{op}, \
+	{instr_g2_op_range_hi},{instr_g2_op_range_lo}
+.define encode_ig2_rA( rA ) lshift_masked_bits{rA}, \
+	{instr_g2_ra_index_range_hi},{instr_g2_ra_index_range_lo}
+.define encode_ig2_rB( rB ) lshift_masked_bits{rB}, \
+	{instr_g2_rb_index_range_hi},{instr_g2_rb_index_range_lo}
+
+.macro gen_grp_2_instr_rA_rB ig2_op, rA, rB
+	error_if_bad_reg_name rA, ig2_op
+	error_if_bad_reg_name rB, ig2_op
+	
+	.dbyt encode_ig2_id{instr_g2_id} | encode_ig2_op{ig2_op} \
+		| encode_ig2_rA{.ident(rA)} | encode_ig2_rB{.ident(rB)}
+.endmac
+.macro gen_grp_2_instr_rA ig2_op, rA
+	error_if_bad_reg_name rA, ig2_op
+	
+	.dbyt encode_ig2_id{instr_g2_id} | encode_ig2_op{ig2_op} \
+		| encode_ig2_rA{.ident(rA)}
+.endmac
+.macro gen_grp_2_instr_rAp ig2_op, rAp
+	error_if_bad_reg_pair_name rAp, ig2_op
+	
+	.dbyt encode_ig2_id{instr_g2_id} | encode_ig2_op{ig2_op} \
+		| encode_ig2_rA{.ident(reg_pair_hi{rAp})}
+.endmac
+.macro gen_grp_2_instr_rAp_rB ig2_op, rAp, rB
+	error_if_bad_reg_pair_name rAp, ig2_op
+	error_if_bad_reg_name rB, ig2_op
+	
+	.dbyt encode_ig2_id{instr_g2_id} | encode_ig2_op{ig2_op} \
+		| encode_ig2_rA{.ident(reg_pair_hi{rAp})} \
+		| encode_ig2_rB{.ident(rB)}
+.endmac
+.macro gen_grp_2_instr_rA_rBp ig2_op, rA, rBp
+	error_if_bad_reg_name rA, ig2_op
+	error_if_bad_reg_pair_name rBp, ig2_op
+	
+	.dbyt encode_ig2_id{instr_g2_id} | encode_ig2_op{ig2_op} \
+		| encode_ig2_rA{.ident(rA)} \
+		| encode_ig2_rB{.ident(reg_pair_hi{rBp})}
+.endmac
+.macro gen_grp_2_instr_rAp_rBp ig2_op, rAp, rBp
+	error_if_bad_reg_pair_name rAp, ig2_op
+	error_if_bad_reg_pair_name rBp, ig2_op
+	
+	.dbyt encode_ig2_id{instr_g2_id} | encode_ig2_op{ig2_op} \
+		| encode_ig2_rA{.ident(reg_pair_hi{rAp})} \
+		| encode_ig2_rB{.ident(reg_pair_hi{rBp})}
+.endmac
+
+.macro gen_grp_2_instr_rBp ig2_op, rBp
+	error_if_bad_reg_pair_name rBp, ig2_op
+	
+	.dbyt encode_ig2_id{instr_g2_id} | encode_ig2_op{ig2_op} \
+		| encode_ig2_rB{.ident(reg_pair_hi{rBp})}
+.endmac
+.macro gen_grp_2_instr_no_args ig2_op
+	
+	.dbyt encode_ig2_id{instr_g2_id} | encode_ig2_op{ig2_op}
+.endmac
+
+
+; Instruction Group 3 generation macros
+; Encoding:  1100 ooaa aabb bccc
+.define encode_ig3_id( ig3_id ) lshift_masked_bits{ig3_id}, \
+	{instr_g3_id_range_hi},{instr_g3_id_range_lo}
+.define encode_ig3_op( op ) lshift_masked_bits{op}, \
+	{instr_g3_op_range_hi},{instr_g3_op_range_lo}
+.define encode_ig3_rA( rA ) lshift_masked_bits{rA}, \
+	{instr_g3_ra_index_range_hi},{instr_g3_ra_index_range_lo}
+.define encode_ig3_rBp( rBp ) lshift_masked_bits{rBp}, \
+	{instr_g3_rbp_index_range_hi},{instr_g3_rbp_index_range_lo}
+.define encode_ig3_rCp( rCp ) lshift_masked_bits{rCp}, \
+	{instr_g3_rcp_index_range_hi},{instr_g3_rcp_index_range_lo}
+
+.macro gen_grp_3_instr_rA_rBp_rCp ig3_op, rA, rBp, rCp
+	error_if_bad_reg_name rA, ig3_op
+	error_if_bad_reg_pair_name rBp, ig3_op
+	error_if_bad_reg_pair_name rCp, ig3_op
+	
+	.dbyt encode_ig3_id{instr_g3_id} | encode_ig3_op{ig3_op} \
+		| encode_ig3_rA{.ident(rA)} \
+		| encode_ig3_rBp{encode_reg_pair{.ident(rBp)}} \
+		| encode_ig3_rCp{encode_reg_pair{.ident(rCp)}}
+.endmac
+
+.macro gen_grp_3_instr_rAp_rBp_rCp ig3_op, rAp, rBp, rCp
+	error_if_bad_reg_pair_name rAp, ig3_op
+	error_if_bad_reg_pair_name rBp, ig3_op
+	error_if_bad_reg_pair_name rCp, ig3_op
+	
+	.dbyt encode_ig3_id{instr_g3_id} | encode_ig3_op{ig3_op} \
+		| encode_ig3_rA{encode_reg_pair{.ident(rAp)}} \
+		| encode_ig3_rBp{encode_reg_pair{.ident(rBp)}} \
+		| encode_ig3_rCp{encode_reg_pair{.ident(rCp)}}
+.endmac
+
+
+; Instruction Group 4 generation macros
+; Encoding:  1101 oooo iiii iiii
+.define encode_ig4_id( ig4_id ) lshift_masked_bits{ig4_id}, \
+	{instr_g4_id_range_hi},{instr_g4_id_range_lo}
+.define encode_ig4_op( op ) lshift_masked_bits{op}, \
+	{instr_g4_op_range_hi},{instr_g4_op_range_lo}
+
+.macro gen_grp_4_instr ig4_op, offset
+	_branch_offset { .byte ( encode_ig4_id{instr_g4_id} \
+		| encode_ig4_op{ig4_op} ) >> 8 }, offset
+.endmac
+
+
+; Instruction Group 5 generation macros
+; Encoding:  1110 00oo oaaa abbb   iiii iiii jjjj jjjj
+.define encode_ig5_ihi_id( ig5_id ) lshift_masked_bits{ig5_id}, \
+	{instr_g5_ihi_id_range_hi},{instr_g5_ihi_id_range_lo}
+.define encode_ig5_ihi_op( op ) lshift_masked_bits{op}, \
+	{instr_g5_ihi_op_range_hi},{instr_g5_ihi_op_range_lo}
+.define encode_ig5_ihi_rA( rA ) lshift_masked_bits{rA}, \
+	{instr_g5_ihi_ra_index_range_hi},{instr_g5_ihi_ra_index_range_lo}
+.define encode_ig5_ihi_rBp( rBp ) lshift_masked_bits{rBp}, \
+	{instr_g5_ihi_rbp_index_range_hi},{instr_g5_ihi_rbp_index_range_lo}
+
+.macro gen_grp_5_instr_rA_rBp ig5_op, rA, rBp, imm_value_16
+	error_if_bad_reg_name rA
+	error_if_bad_reg_pair_name rBp
+	
+	.dbyt encode_ig5_ihi_id{instr_g5_ihi_id} \
+		| encode_ig5_ihi_op{ig5_op} | encode_ig5_ihi_rA{.ident(rA)} \
+		| encode_ig5_ihi_rBp{encode_reg_pair{.ident(rBp)}}
+	.dbyt .loword(imm_value_16)
+.endmac
+
+.macro gen_grp_5_instr_rAp ig5_op, rAp, imm_value_16
+	error_if_bad_reg_pair_name rAp
+	
+	.dbyt encode_ig5_ihi_id{instr_g5_ihi_id} \
+		| encode_ig5_ihi_op{ig5_op} \
+		| encode_ig5_ihi_rA{.ident(reg_pair_hi{rAp})}
+	.dbyt .loword(imm_value_16)
+.endmac
+
+.macro gen_grp_5_instr_rAp_rBp ig5_op, rAp, rBp, imm_value_16
+	error_if_bad_reg_pair_name rAp
+	
+	.dbyt encode_ig5_ihi_id{instr_g5_ihi_id} \
+		| encode_ig5_ihi_op{ig5_op} \
+		| encode_ig5_ihi_rA{.ident(reg_pair_hi{rAp})} \
+		| encode_ig5_ihi_rBp{.ident(reg_pair_hi{rBp})}
+	.dbyt .loword(imm_value_16)
+.endmac
+
+.macro gen_grp_5_instr_imm_value_16_only ig5_op, imm_value_16
+	
+	.dbyt encode_ig5_ihi_id{instr_g5_ihi_id} | encode_ig5_ihi_op{ig5_op}
+	.dbyt .loword(imm_value_16)
+.endmac
+
+
+; Instruction group 1 has 3 opcode bits
+; Encoding:  0ooo aaaa iiii iiii
+
+	; Arithmetic instructions:
+	; (ADD 8-bit Immediate value to reg Pair rAp)
+.macro addi rAp, imm_value_8 
+	gen_grp_1_instr_rAp instr_grp_1_oper::instr_g1_op_addi, rAp, \
+		imm_value_8
+.endmac
+	; (SuBtract 8-bit Immediate value from reg Pair rAp)
+.macro subi rAp, imm_value_8 
+	gen_grp_1_instr_rAp instr_grp_1_oper::instr_g1_op_subi, rAp, \
+		imm_value_8
+.endmac
+	; (CoMPare reg pair rAp to 8-bit Immediate value)
+.macro cmpi rAp, imm_value_8 
+	gen_grp_1_instr_rAp instr_grp_1_oper::instr_g1_op_cmpi, rAp, \
+		imm_value_8
+.endmac
+
+	; Bitshifting instructions with two operands (rAp and 8-bit Immediate
+	; value):
+.macro lsli rAp, imm_value_8 
+	gen_grp_1_instr_rAp instr_grp_1_oper::instr_g1_op_lsli, rAp, \
+		imm_value_8
+.endmac
+.macro lsri rAp, imm_value_8 
+	gen_grp_1_instr_rAp instr_grp_1_oper::instr_g1_op_lsri, rAp, \
+		imm_value_8
+.endmac
+.macro asri rAp, imm_value_8 
+	gen_grp_1_instr_rAp instr_grp_1_oper::instr_g1_op_asri, rAp, \
+		imm_value_8
+.endmac
+  
+	; Copy instructions:
+	; (CoPY Byte Immediate to register rA)
+.macro cpybi rA, imm_value_8 
+	gen_grp_1_instr_rA instr_grp_1_oper::instr_g1_op_cpybi, rA, imm_value_8
+.endmac
+
+
+
+; Instruction group 2 has 6 opcode bits
+; Encoding:  10oo oooo aaaa bbbb
+	; -- rA, rB --
+
+	; Copy instructions:
+	; (CoPY from reg rB to reg rA)
+.macro cpyb rA, rB
+	gen_grp_2_instr_rA_rB instr_grp_2_oper::instr_g2_op_cpyb, rA, rB
+.endmac
+
+
+	; -- rAp --
+	; Complement instructions with one reg pair operand (rB ignored):
+	; (one's complement of rAp)
+.macro inv rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_inv, rAp
+.endmac
+	; (two's complement of rAp)
+.macro neg rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_neg, rAp
+.endmac
+
+	; Bit rotating instructions that use carry as bit 16 for a 17-bit
+	; rotate of { carry, rAp } by one bit:
+.macro rolc rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_rol, rAp
+.endmac
+.macro rorc rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_ror, rAp
+.endmac
+
+	; Call instruction (Description:  sets the link register to the return
+	; address, then sets the program counter to the address contained in
+	; the reg pair rAp):
+	; (CALL subroutine at address in reg pair rAp)
+.macro call rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_call, rAp
+.endmac
+
+
+	; PC Copy Instructions:
+	; (CoPY FRom PC to reg pair rAp (this can be used for pc-relative loads
+	; and stores))
+.macro cpyfrpc rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_cpyfrpc, rAp
+.endmac
+
+	; (Copy rAp to the pc)
+.macro jump rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_jump, rAp
+.endmac
+
+	; Extra Interrupt Instructions:
+	; (Swap the Interrupt Return Address and rAp)
+.macro swpira rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_swpira, rAp
+.endmac
+	; (CoPY the Interrupt Return Address to rAp)
+.macro cpyira rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_cpyira, rAp
+.endmac
+
+	; Flags Instructions:
+	; (Clear reg rAp, then CoPY FRom Flags to reg rAp)
+.macro cpyfrf rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_cpyfrf, rAp
+.endmac
+	; (CoPY TO Flags from reg rAp)
+.macro cpytof rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_cpytof, rAp
+.endmac
+
+	; (Add 1 to the reg pair rAp, then LoaD a byte, from the updated
+	; address in rAp, containing processor Flags (other bits cleared) into
+	; the processor flags)
+.macro ldfab rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_ldfab, rAp
+.endmac
+
+	; (STore a byte containing the current processor flags (other bits
+	; cleared) to memory at address contained in reg pair rAp, then
+	; Subtract 1 from the reg pair rAp)
+.macro stfsa rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_stfsa, rAp
+.endmac
+
+
+
+	; -- rA, rBp --
+	; 8-bit Load/store instructions:
+	; (LoaD contents into Register rA from memory at address in rBp)
+.macro ldr rA, rBp
+	gen_grp_2_instr_rA_rBp instr_grp_2_oper::instr_g2_op_ldr, rA, rBp
+.endmac
+	; (STore Register rA contents to memory at address in rBp)
+.macro str rA, rBp
+	gen_grp_2_instr_rA_rBp instr_grp_2_oper::instr_g2_op_str, rA, rBp
+.endmac
+
+
+
+	; -- rAp, rBp --
+
+	; Arithmetic instructions:
+.macro add rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_add, rAp, rBp
+.endmac
+.macro adc rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_adc, rAp, rBp
+.endmac
+.macro sub rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_sub, rAp, rBp
+.endmac
+.macro sbc rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_sbc, rAp, rBp
+.endmac
+.macro cmp rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_cmp, rAp, rBp
+.endmac
+	; (Unsigned MULtiplies rAp and rBp and stores 32-bit result in r0p:r2p)
+.macro umull rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_umull , rAp, rBp
+.endmac
+	; (Signed MULtiplies rAp and rBp and stores 32-bit result in r0p:r2p)
+.macro smull rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_smull , rAp, rBp
+.endmac
+
+	; Bitwise instructions with two reg pair operands:
+.macro and rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_and, rAp, rBp
+.endmac
+	; (same thing as "and" but only affects flags)
+.macro tst rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_tst , rAp, rBp
+.endmac
+.macro orr rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_orr, rAp, rBp
+.endmac
+.macro xor rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_xor, rAp, rBp
+.endmac
+
+	; Bitshifting (and rotating) instructions that do a 16-bit shift or
+	; rotate on the reg pair rAp, using rBp as the number of bits to shift
+	; by:
+.macro lsl rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_lsl, rAp, rBp
+.endmac
+.macro lsr rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_lsr, rAp, rBp
+.endmac
+.macro asr rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_asr, rAp, rBp
+.endmac
+.macro rol rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_rol, rAp, rBp
+.endmac
+.macro ror rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_ror, rAp, rBp
+.endmac
+
+	; (CoPY from reg pair rBp to reg Pair rAp)
+.macro cpy rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_cpy, rAp, rBp
+.endmac
+
+	; 16-bit Load/store instructions:
+	; (LoaD contents into reg Pair rAp from memory at address in rBp)
+.macro ldp rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_ldp , rAp, rBp
+.endmac
+	; (STore reg Pair rAp contents to memory at address in rBp)
+.macro stp rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_stp , rAp, rBp
+.endmac
+
+	; 16-bit Push/pop style instructions:
+	; (Add 1 the reg pair rBp, then LoaD contents into reg pair rAp from
+	; memory at address contained in reg pair rBp)
+.macro ldpab rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_ldpab , rAp, rBp
+.endmac
+
+	; (STore reg Pair rAp to memory at address contained in reg pair rBp,
+	; then Subtract 1 from the reg pair rBp)
+.macro stpsa rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_stpsa , rAp, rBp
+.endmac
+
+
+
+
+	; -- no args --
+	; Interrupt instructions (these ignore BOTH rA and rB):
+	; (ENable Interrupts)
+.macro eni
+	gen_grp_2_instr_no_args instr_grp_2_oper::instr_g2_op_eni
+.endmac
+	; (DIsable Interrupts)
+.macro dii
+	gen_grp_2_instr_no_args instr_grp_2_oper::instr_g2_op_dii
+.endmac
+	; (Set the PC to interrupt RETurn address and enable Interrupts)
+.macro reti
+	gen_grp_2_instr_no_args instr_grp_2_oper::instr_g2_op_reti
+.endmac
+	; (Set the PC to the Interrupt Return Address, but DON'T enable
+	; interrupts)
+.macro jumpira
+	gen_grp_2_instr_no_args instr_grp_2_oper::instr_g2_op_jumpira
+.endmac
+
+
+; Group 3 Instructions
+; Encoding:  1100 ooaa aabb bccc
+	; Indexed Load/store instructions:
+	; Load 8-bit value from memory at address [rBp + rCp] into rA
+.macro ldrx rA, rBp, rCp
+	gen_grp_3_instr_rA_rBp_rCp instr_grp_3_oper::instr_g3_op_ldrx, rA, \
+		rBp, rCp
+.endmac
+	; Store rA to memory at address [rBp + rCp]
+.macro strx rA, rBp, rCp
+	gen_grp_3_instr_rA_rBp_rCp instr_grp_3_oper::instr_g3_op_strx, rA, \
+		rBp, rCp
+.endmac
+
+	; (Load 16-bit value from memory at address [rBp + rCp] into rAp)
+.macro ldpx rAp, rBp, rCp
+	gen_grp_3_instr_rAp_rBp_rCp instr_grp_3_oper::instr_g3_op_ldpx, rAp, \
+		rBp, rCp
+.endmac
+	; (Store rAp to memory at address [rBp + rCp])
+.macro stpx rAp, rBp, rCp
+	gen_grp_3_instr_rAp_rBp_rCp instr_grp_3_oper::instr_g3_op_stpx, rAp, \
+		rBp, rCp
+.endmac
+
+
+
+; Group 4 Instructions
+; Encoding:  1101 oooo iiii iiii
+	; Branching instructions (note that iiii iiii is a SIGNED 8-bit
+	; integer):
+
+	; (branch always)
+.macro bra offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bra, offset
+.endmac
+	; (branch never, a form of NOP)
+.macro bnv offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bnv, offset
+.endmac
+	; (branch when Z == 0)
+.macro bne offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bne, offset
+.endmac
+	; (branch when Z == 1)
+.macro beq offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_beq, offset
+.endmac
+	; (branch when C == 0 [unsigned less than])
+.macro bcc offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bcc, offset
+.endmac
+	; (branch when C == 1 [unsigned greater than or equal])
+.macro bcs offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bcs, offset
+.endmac
+	; (branch when C == 0 or Z == 1 [unsigned less than or equal])
+.macro bls offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bls, offset
+.endmac
+	; (branch when C == 1 and Z == 0 [unsigned greater than])
+.macro bhi offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bhi, offset
+.endmac
+
+
+
+	; (branch when N == 0)
+.macro bpl offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bpl, offset
+.endmac
+	; (branch when N == 1)
+.macro bmi offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bmi, offset
+.endmac
+
+	; (branch when V == 0)
+.macro bvc offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bvc, offset
+.endmac
+	; (branch when V == 1)
+.macro bvs offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bvs, offset
+.endmac
+
+
+	; (branch when N == V [signed greater than or equal])
+.macro bge offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bge, offset
+.endmac
+	; (branch when N != V [signed less than])
+.macro blt offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_blt, offset
+.endmac
+
+	; (branch when ( N == V and Z == 0 ) [signed greater than])
+.macro bgt offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_bgt, offset
+.endmac
+	; (branch when ( N != V or Z == 1 ) [signed less than or equal])
+.macro ble offset
+	gen_grp_4_instr instr_grp_4_oper::instr_g4_op_ble, offset
+.endmac
+
+
+; Group 5 Instructions
+; Encoding:  1110 00oo oaaa abbb   iiii iiii jjjj jjjj
+
+	; Extended copy instructions:
+	; (COPY Pair Immediate, which sets the a register pair rAp to a
+	; 16-bit value in one instruction, but in twice the number of
+	; cycles due to using more than two bytes [can be used a as a jump
+	; immediate by copying a 16-bit immediate value to the pc] [this
+	; instruction ONLY has an advantage over using two successive cpyi
+	; instructions when used to copy a 16-bit immediate value to the
+	; pc])
+.macro cpyi rAp, imm_value_16
+	;error_if_bad_reg_pair_name rAp
+	gen_grp_5_instr_rAp instr_grp_5_oper::instr_g5_op_cpyi, rAp, \
+		imm_value_16
+.endmac
+
+
+	; (Sets the PC to a 16-bit immediate value)
+.macro jumpi imm_value_16
+	gen_grp_5_instr_imm_value_16_only \
+		instr_grp_5_oper::instr_g5_op_jumpi, imm_value_16
+.endmac
+
+	; Call instructions
+	; (CALL Immediate, which sets the link register to the return
+	; address, then sets the program counter to the destination
+	; address)
+.macro calli imm_value_16
+	gen_grp_5_instr_imm_value_16_only \
+		instr_grp_5_oper::instr_g5_op_calli, imm_value_16 
+.endmac
+
+	; Indexed Load/store instructions:
+	; (Load 8-bit value from memory at address [rBp + 16-bit Immediate
+	; value] into rA)
+.macro ldrxi rA, rBp, imm_value_16
+	;error_if_bad_reg_name rA
+	;error_if_bad_reg_pair_name rBp
+	gen_grp_5_instr_rA_rBp instr_grp_5_oper::instr_g5_op_ldrxi, rA, rBp, \
+		imm_value_16
+.endmac
+
+	; (Store rA to memory at address [rBp + 16-bit Immediate value])
+.macro strxi rA, rBp, imm_value_16
+	;error_if_bad_reg_name rA
+	;error_if_bad_reg_pair_name rBp
+	
+	gen_grp_5_instr_rA_rBp instr_grp_5_oper::instr_g5_op_strxi, rA, rBp, \
+		imm_value_16
+.endmac
+
+	; (Load 16-bit value from memory at address [rBp + 16-bit Immediate
+	; value] into rAp)
+.macro ldpxi rAp, rBp, imm_value_16
+	gen_grp_5_instr_rAp_rBp instr_grp_5_oper::instr_g5_op_ldpxi, rAp, \
+		rBp, imm_value_16
+.endmac
+	; (Store rAp to memory at address [rBp + 16-bit Immediate value])
+.macro stpxi rAp, rBp, imm_value_16
+	gen_grp_5_instr_rAp_rBp instr_grp_5_oper::instr_g5_op_stpxi, rAp, \
+		rBp, imm_value_16
+.endmac
+
+
+
+
+; This is the only reason I know of to use bnv
+.macro nop
+	.local @next
+@next:
+	bnv @next
+.endmac
+
+
+	; (branch when Z == 0 )
+.macro bzc offset
+	bne offset
+.endmac
+	; (branch when Z == 1 )
+.macro bzs offset
+	beq offset
+.endmac
+
+	; (branch when C == 0 [unsigned less than])
+.macro blo offset
+	bcc offset
+.endmac
+	; (branch when C == 1 [unsigned greater than or equal])
+.macro bhs offset
+	bcs offset
+.endmac
+
+.macro cmpi16 rAp, imm_value_16
+	.if ( .xmatch( rAp, r0p ) )
+		push_pair r2p
+		cpyi r2p, imm_value_16
+		cmp rAp, r2p
+		pop_pair r2p
+	.else
+		push_pair r0p
+		cpyi r0p, imm_value_16
+		cmp rAp, r0p
+		pop_pair r0p
+	.endif
+.endmac
+
+
+;.macro branch_eq_16_imm rAp, imm_value_16, label
+;	error_if_bad_reg_pair_name rAp
+;	
+;	.local @not_equal
+;	cmpbi reg_pair_hi{rAp}, >(imm_value_16)
+;	bne @not_equal
+;	
+;	cmpbi reg_pair_lo{rAp}, <(imm_value_16)
+;	beq label
+;@not_equal:
+;	
+;.endmac
+;
+;
+;.macro branch_ne_16_imm rAp, imm_value_16, label
+;	error_if_bad_reg_pair_name rAp
+;	
+;	cmpbi reg_pair_hi{rAp}, >(imm_value_16)
+;	bne label
+;	
+;	cmpbi reg_pair_lo{rAp}, <(imm_value_16)
+;	bne label
+;.endmac
+
+
+.macro branch_ne_32_imm rAp, rBp, imm_value_32, label
+	error_if_bad_reg_pair_name rAp
+	error_if_bad_reg_pair_name rBp
+	
+	;branch_ne_16_imm rAp, .hiword(imm_value_32), label
+	;branch_ne_16_imm rBp, .loword(imm_value_32), label
+	cmpi16 rAp, .hiword(imm_value_32)
+	bne label
+	cmpi16 rBp, .loword(imm_value_32)
+	bne label
+	
+.endmac
+
+.macro branch_ne_32 rAp, rBp, rCp, rDp, label
+	error_if_bad_reg_pair_name rAp
+	error_if_bad_reg_pair_name rBp
+	error_if_bad_reg_pair_name rCp
+	error_if_bad_reg_pair_name rDp
+	
+	cmp rAp, rCp
+	bne label
+	
+	cmp rBp, rDp
+	bne label
+.endmac
+
+
+
+.macro backup_restore_lr_call rAp
+	push_pair lr
+	call rAp
+	pop_pair lr
+.endmac
+
+.macro backup_restore_lr_calli label
+	push_pair lr
+	calli label
+	pop_pair lr
+.endmac
+
+.macro basic_ret
+	jump lr
+.endmac
+
+
+;.macro pop_and_ret rAp
+;	pop_pair rAp
+;	basic_jump rAp
+;.endmac
+
+
+.include "multi_ldr_str_macros.jinc"
+.include "multi_ldp_stp_macros.jinc"
+
+
+.macro push_pair rAp
+	stpsa rAp, sp
+.endmac
+
+.macro pop_pair rAp
+	ldpab rAp, sp
+.endmac
+
+
+.macro push_flags
+	stfsa sp
+.endmac
+.macro pop_flags
+	ldfab sp
+.endmac
+
+
+.endif		; jolt160_ca65_macro_pack_jinc

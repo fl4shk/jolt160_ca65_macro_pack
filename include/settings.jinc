@@ -1,0 +1,9 @@
+.ifndef settings_jinc
+settings_jinc = 3
+
+
+.linecont +
+.setcpu "none"
+
+
+.endif		; settings_jinc

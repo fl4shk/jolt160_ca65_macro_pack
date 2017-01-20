@@ -1,0 +1,12 @@
+.ifndef multi_ldp_stp_macros_jinc
+multi_ldp_stp_macros_jinc = 3
+
+
+.define convert_pair_to_two_regs( rAp ) reg_pair_hi{rAp}, reg_pair_lo{rAp}
+
+
+
+
+
+
+.endif		; multi_ldp_stp_macros_jinc

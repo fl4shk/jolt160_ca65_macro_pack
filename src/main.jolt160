@@ -1,0 +1,302 @@
+.include "../include/jolt160_ca65_macro_pack.jinc"
+.include "test_var_stuff.jinc"
+.include "misc_utility_macros.jinc"
+
+
+
+.segment "VECTORS"
+reset_vec_addr:
+	.dbyt reset
+interrupt_vec_addr:
+	.dbyt isr_main
+
+
+
+.segment "ROM"
+
+
+
+
+
+
+
+reset:
+	init_sp
+	
+	
+	;cpypi r0p, main
+	;;jumpi main
+	;jump r0p
+	jumpi main
+
+
+
+
+
+.macro gen_branch_test_subroutine subroutine_name, \
+	branch_type_0_str, branch_type_1_str, ret_val_0, ret_val_1, \
+	compare_type_str, reg_or_pair_0, reg_or_pair_1
+	
+subroutine_name:
+	;cmp r0, r1
+	.ident(compare_type_str) reg_or_pair_0, reg_or_pair_1
+	.ident(branch_type_0_str) @label_0
+	.ident(branch_type_1_str) @label_1
+	
+	
+@neither:
+	cpybi r0, $ff
+	bra @done
+	
+@label_0:
+	cpybi r0, ret_val_0
+	bra @done
+	
+@label_1:
+	cpybi r0, ret_val_1
+	;bra @done
+	
+@done:
+	basic_ret
+.endmac
+
+
+
+
+;gen_branch_test_subroutine test_blo_bhs, "blo", "bhs", $22, $aa, \
+;	"cmpb", r0, r1
+;gen_branch_test_subroutine test_bls_bhi, "bls", "bhi", $22, $aa, \
+;	"cmpb", r0, r1
+;gen_branch_test_subroutine test_blt_bge, "blt", "bge", $22, $aa, \
+;	"cmpb", r0, r1
+;gen_branch_test_subroutine test_ble_bgt, "ble", "bgt", $22, $aa, \
+;	"cmpb", r0, r1
+
+
+gen_branch_test_subroutine test_pair_blo_bhs, "blo", "bhs", $22, $aa, \
+	"cmp", r0p, r2p
+gen_branch_test_subroutine test_pair_bls_bhi, "bls", "bhi", $22, $aa, \
+	"cmp", r0p, r2p
+gen_branch_test_subroutine test_pair_blt_bge, "blt", "bge", $22, $aa, \
+	"cmp", r0p, r2p
+gen_branch_test_subroutine test_pair_ble_bgt, "ble", "bgt", $22, $aa, \
+	"cmp", r0p, r2p
+
+
+
+.macro do_test_two_branches r0_imm, r1_imm, result_store_index, \
+	tester_subroutine
+	cpyi r0p, ( ( .lobyte(r0_imm) << 8 ) | ( .lobyte(r1_imm) ) )
+	calli tester_subroutine
+	
+	push_pair r4p
+	cpyi r4p, branch_test_result_arr
+	strxi r0, r4p, result_store_index
+	pop_pair r4p
+.endmac
+
+.macro do_test_pair_two_branches r0p_imm, r2p_imm, result_store_index, \
+	tester_subroutine
+	cpyi r0p, r0p_imm
+	cpyi r2p, r2p_imm
+	calli tester_subroutine
+	
+	push_pair r4p
+	cpyi r4p, branch_test_result_arr
+	strxi r0, r4p, result_store_index
+	pop_pair r4p
+.endmac
+
+
+.macro do_test_blo_bhs r0_imm, r1_imm, result_store_index
+	do_test_two_branches r0_imm, r1_imm, result_store_index, test_blo_bhs
+.endmac
+.macro do_test_bls_bhi r0_imm, r1_imm, result_store_index
+	do_test_two_branches r0_imm, r1_imm, result_store_index, test_bls_bhi
+.endmac
+.macro do_test_blt_bge r0_imm, r1_imm, result_store_index
+	do_test_two_branches r0_imm, r1_imm, result_store_index, test_blt_bge
+.endmac
+.macro do_test_ble_bgt r0_imm, r1_imm, result_store_index
+	do_test_two_branches r0_imm, r1_imm, result_store_index, test_ble_bgt
+.endmac
+
+
+
+.macro do_test_pair_blo_bhs r0p_imm, r2p_imm, result_store_index
+	do_test_pair_two_branches r0p_imm, r2p_imm, result_store_index, \
+		test_pair_blo_bhs
+.endmac
+.macro do_test_pair_bls_bhi r0p_imm, r2p_imm, result_store_index
+	do_test_pair_two_branches r0p_imm, r2p_imm, result_store_index, \
+		test_pair_bls_bhi
+.endmac
+.macro do_test_pair_blt_bge r0p_imm, r2p_imm, result_store_index
+	do_test_pair_two_branches r0p_imm, r2p_imm, result_store_index, \
+		test_pair_blt_bge
+.endmac
+.macro do_test_pair_ble_bgt r0p_imm, r2p_imm, result_store_index
+	do_test_pair_two_branches r0p_imm, r2p_imm, result_store_index, \
+		test_pair_ble_bgt
+.endmac
+
+
+
+main:
+	;do_test_pair_blo_bhs 200, 900, 0
+	;do_test_pair_blo_bhs 3000, 900, 1
+	;do_test_pair_blo_bhs 15000, 15001, 2
+	;do_test_pair_blo_bhs -15000, -15001, 3
+	;do_test_pair_blo_bhs 30383, 30384, 4
+	;do_test_pair_blo_bhs 30384, 30384, 5
+	;do_test_pair_blo_bhs 30385, 30384, 6
+	
+	
+	do_test_pair_blt_bge 3000, -3000, 0
+	do_test_pair_blt_bge -9001, -9000, 1
+	do_test_pair_blt_bge -9000, -9000, 2
+	do_test_pair_blt_bge -8999, -9000, 3
+	
+	;do_test_pair_ble_bgt 3000, -3000, 0
+	;do_test_pair_ble_bgt -9001, -9000, 1
+	;do_test_pair_ble_bgt -9000, -9000, 2
+	;do_test_pair_ble_bgt -8999, -9000, 3
+	
+	
+@load_results:
+	push_pair r10p
+	cpyi r10p, branch_test_result_arr
+	ldrxi r0, r10p, 0
+	ldrxi r1, r10p, 1
+	ldrxi r2, r10p, 2
+	ldrxi r3, r10p, 3
+	ldrxi r4, r10p, 4
+	ldrxi r5, r10p, 5
+	ldrxi r6, r10p, 6
+	ldrxi r7, r10p, 7
+	pop_pair r10p
+	
+	
+@done:
+	jumpi end_simulation
+
+
+
+
+;testing_main:
+;	push_pair lr
+;	
+;	;cpyi r0p, 2000
+;	;cpybi r2, 30
+;	;cpybi r2, 2
+;	
+;	;calli slow_umod_16_by_8
+;	;calli long_udiv_16_by_8
+;	
+;	;calli test_long_udiv
+;	
+;	;calli do_tests
+;	
+;	
+;@done:
+;	pop_pair lr
+;	basic_ret
+;
+;do_tests:
+;	push_pair lr
+;	
+;	;cpybi r0, $09
+;	;calli test_ldst
+;	;;calli test_ldst_and_push_pop
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $02 | $80 )
+;	;beq @testing_failed
+;	;
+;	;
+;	;
+;	;calli test_32_bit_add
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $03 | $80 )
+;	;beq @testing_failed
+;	;
+;	;calli test_32_bit_subtract
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $04 | $80 )
+;	;beq @testing_failed
+;	;
+;	;
+;	;calli test_32_bit_add_immediate
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $05 | $80 )
+;	;beq @testing_failed
+;	;
+;	;calli test_32_bit_subtract_immediate
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $06 | $80 )
+;	;beq @testing_failed
+;	;
+;	;
+;	;calli test_addpb
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $07 | $80 )
+;	;beq @testing_failed
+;	;
+;	;calli test_subpb
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $08 | $80 )
+;	;beq @testing_failed
+;	;
+;	;calli test_and_orr_inv_invp
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $09 | $80 )
+;	;beq @testing_failed
+;	;
+;	;
+;	;calli test_xor
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $0a | $80 )
+;	;beq @testing_failed
+;	;
+;	;
+;	;calli test_asr
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $0b | $80 )
+;	;beq @testing_failed
+;	;
+;	;
+;	;calli test_rol
+;	;cmpbi r0, $00
+;	;cpybi r0, ( $0c | $80 )
+;	;beq @testing_failed
+;	
+;	
+;@testing_succeeded:
+;	cpybi r0, $01
+;	bra @testing_done
+;	
+;@testing_failed:
+;	;cpybi r0, $00
+;	
+;@testing_done:
+;	pop_pair lr
+;	basic_ret
+
+
+
+isr_main:
+	push_flags
+	
+	;cpybi r0, $9a
+	;calli other_file_test_subroutine
+	
+	pop_flags
+	
+	push_pair r0p
+	cpyira r0p
+	push_pair r2p
+	
+	;cpyira pc
+	;reti
+
+
+

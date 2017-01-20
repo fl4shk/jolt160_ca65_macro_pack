@@ -1,0 +1,23 @@
+.include "../include/jolt160_ca65_macro_pack.jinc"
+.include "test_var_stuff.jinc"
+
+.export some_var
+.export some_arr
+.export test_math_arr
+.export branch_test_result_arr
+
+.segment "BSS"
+
+some_var:
+	.res some_var_size
+
+
+some_arr:
+	.res some_arr_size
+
+test_math_arr:
+	.res test_math_arr_size
+
+
+branch_test_result_arr:
+	.res branch_test_result_arr_size

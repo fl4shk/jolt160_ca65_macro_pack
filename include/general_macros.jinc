@@ -1,0 +1,29 @@
+.ifndef general_macros_jinc
+general_macros_jinc = 3
+
+.include "settings.jinc"
+
+.define width_to_msb_pos( some_width ) ( some_width - 1 )
+
+
+.define bprange_to_unshifted_mask( bit_pos_hi, bit_pos_lo ) \
+	( ( 1 << ( (bit_pos_hi) - (bit_pos_lo) + 1 ) ) - 1 )
+
+
+; Don't use these with bit_pos_hi == bit_pos_lo
+.define bprange_to_shifted_mask( bit_pos_hi, bit_pos_lo ) \
+	bprange_to_unshifted_mask{(bit_pos_hi)},{(bit_pos_lo)} << (bit_pos_lo)
+; Here is how to call the .define:  ( bprange_to_shifted_mask{15},{(14-1} )
+.define lshift_masked_bits( val, bit_pos_hi, bit_pos_lo ) \
+	( ( (val) & bprange_to_unshifted_mask{bit_pos_hi},{bit_pos_lo} ) \
+	<< (bit_pos_lo) )
+
+
+;.macro dbyt32 imm_value_32
+;	.dbyt .hiword(imm_value_32)
+;	.dbyt .loword(imm_value_32)
+;.endmac
+.define convert_iv_32_to_words( imm_value_32 ) \
+	.hiword(imm_value_32), .loword(imm_value_32)
+
+.endif		; general_macros_jinc

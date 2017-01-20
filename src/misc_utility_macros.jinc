@@ -1,0 +1,18 @@
+.ifndef misc_utility_macros_jinc
+misc_utility_macros_jinc = 3
+
+.include "../include/jolt160_ca65_macro_pack.jinc"
+
+.macro init_sp
+	cpyi sp, initial_sp
+.endmac
+
+
+;; End RTL Simulation of the CPU
+;.macro end_simulation
+;	.repeat 4
+;	addi r0p, 0
+;	.endrep
+;.endmac
+
+.endif		; misc_utility_macros_jinc

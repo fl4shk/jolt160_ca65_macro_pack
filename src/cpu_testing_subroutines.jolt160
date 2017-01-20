@@ -1,0 +1,813 @@
+.include "../include/jolt160_ca65_macro_pack.jinc"
+.include "test_var_stuff.jinc"
+.include "misc_utility_macros.jinc"
+
+
+
+;.export do_32_bit_add
+;.export do_32_bit_subtract
+.export test_math_val_a_table
+.export test_math_val_b_table
+.export add32_result_table
+.export sub32_result_table
+
+.export test_ldst
+.export test_ldst_and_push_pop
+
+.export test_32_bit_add
+.export test_32_bit_subtract
+
+.export test_32_bit_add_immediate
+.export test_32_bit_subtract_immediate
+
+;;.export test_addpb
+;;.export test_subpb
+;.export test_and_orr_inv_invp
+;.export test_xor
+;
+;.export slow_umod_16_by_8
+;;.export long_udiv_16_by_8
+;;.export test_long_udiv
+;
+;
+;;.export test_inv_and_neg
+;;
+;;
+;;.export test_asrp
+;;.export test_rolp
+;;.export test_rorp
+;;.export test_rolcp
+;;.export test_rorcp
+;;.export test_invp_and_negp
+
+.segment "ROM"
+
+
+.macro testing_good_and_bad
+@good:
+	cpybi r0, $01
+	bra @done
+	
+@bad:
+	cpybi r0, $00
+.endmac
+
+
+
+
+test_ldst:
+	;multi_push_regs convert_pair_to_two_regs{r4p}, r6, r7, r8
+	
+	cpyi r2p, some_arr
+	cpyi r4p, $0002
+	
+	cpyb r1, r0
+	cpybi r0, $00
+	
+	str r1, r2p
+	strxi r1, r2p, $0001
+	strx r1, r2p, r4p
+	
+	cpybi r6, $00
+	
+	ldr r7, r2p
+	cmp r6p, r0p
+	bne @bad
+	
+	ldrxi r7, r2p, $0001
+	cmp r6p, r0p
+	bne @bad
+	
+	ldrx r7, r2p, r4p
+	cmp r6p, r0p
+	bne @bad
+	
+testing_good_and_bad
+	
+@done:
+	;multi_pop_regs convert_pair_to_two_regs{r4p}, r6, r7, r8
+	
+	basic_ret
+
+
+test_ldst_and_push_pop:
+	cpyi r4p, $4455
+	cpybi r6, $66
+	
+	; Tail call optimization
+	jumpi test_ldst
+
+
+
+
+
+
+test_math_val_a_0 = $ffbbaa33
+test_math_val_b_0 = $10fba3dc
+
+test_math_val_a_1 = $a98f1d23
+test_math_val_b_1 = test_math_val_a_1 + 30
+
+test_math_val_a_2 = test_math_val_b_0 + $12000000
+test_math_val_b_2 = test_math_val_b_1 + $30000000
+
+test_math_val_a_3 = $83abcdab
+test_math_val_b_3 = test_math_val_b_2 + $30000000
+
+test_math_val_a_4 = $85abcdab
+test_math_val_b_4 = test_math_val_b_3 + $56a80003
+
+
+
+add32_result_0 = test_math_val_a_0 + test_math_val_b_0
+add32_result_1 = test_math_val_a_1 + test_math_val_b_1
+add32_result_2 = test_math_val_a_2 + test_math_val_b_2
+add32_result_3 = test_math_val_a_3 + test_math_val_b_3
+
+sub32_result_0 = test_math_val_a_0 - test_math_val_b_0
+sub32_result_1 = test_math_val_a_1 - test_math_val_b_1
+sub32_result_2 = test_math_val_a_2 - test_math_val_b_2
+sub32_result_3 = test_math_val_a_3 - test_math_val_b_3
+
+
+test_math_val_a_table:
+	.dbyt convert_iv_32_to_words{test_math_val_a_0}
+	.dbyt convert_iv_32_to_words{test_math_val_a_1}
+	.dbyt convert_iv_32_to_words{test_math_val_a_2}
+	.dbyt convert_iv_32_to_words{test_math_val_a_3}
+
+test_math_val_b_table:
+	.dbyt convert_iv_32_to_words{test_math_val_b_0}
+	.dbyt convert_iv_32_to_words{test_math_val_b_1}
+	.dbyt convert_iv_32_to_words{test_math_val_b_2}
+	.dbyt convert_iv_32_to_words{test_math_val_b_3}
+
+add32_result_table:
+	.dbyt convert_iv_32_to_words{add32_result_0}
+	.dbyt convert_iv_32_to_words{add32_result_1}
+	.dbyt convert_iv_32_to_words{add32_result_2}
+	.dbyt convert_iv_32_to_words{add32_result_3}
+
+sub32_result_table:
+	.dbyt convert_iv_32_to_words{sub32_result_0}
+	.dbyt convert_iv_32_to_words{sub32_result_1}
+	.dbyt convert_iv_32_to_words{sub32_result_2}
+	.dbyt convert_iv_32_to_words{sub32_result_3}
+sub32_result_table_end:
+
+test_math_table_size = ( sub32_result_table_end - sub32_result_table )
+
+
+test_32_bit_add:
+	;multi_push_pairs r4p, r6p, r8p
+	push_pair r4p
+	push_pair r6p
+	push_pair r8p
+	
+	; Clear the counter
+	cpyi r8p, $0000
+	
+@loop:
+	ldpxi r0p, r8p, test_math_val_a_table
+	ldpxi r4p, r8p, test_math_val_b_table
+	
+	ldpxi r2p, r8p, test_math_val_a_table + num_bytes_1_pair
+	ldpxi r6p, r8p, test_math_val_b_table + num_bytes_1_pair
+	
+	
+	;add32 r0p, r2p, r4p, r6p
+	add r2p, r6p
+	adc r0p, r4p
+	
+	ldpxi r4p, r8p, add32_result_table
+	ldpxi r6p, r8p, add32_result_table + num_bytes_1_pair
+	
+	branch_ne_32 r0p, r2p, r4p, r6p, @bad
+	
+	; Continue the loop
+	addi r8p, num_bytes_2_pair
+	;branch_ne_16_imm r8p, test_math_table_size, @loop
+	cmpi16 r8p, test_math_table_size
+	bne @loop
+	
+	
+testing_good_and_bad
+	
+@done:
+	;multi_pop_pairs r4p, r6p, r8p
+	pop_pair r8p
+	pop_pair r6p
+	pop_pair r4p
+	basic_ret
+
+
+test_32_bit_subtract:
+	;multi_push_pairs r4p, r6p, r8p
+	push_pair r4p
+	push_pair r6p
+	push_pair r8p
+	
+	; Clear the counter
+	cpyi r8p, $0000
+	
+@loop:
+	ldpxi r0p, r8p, test_math_val_a_table
+	ldpxi r4p, r8p, test_math_val_b_table
+	
+	ldpxi r2p, r8p, test_math_val_a_table + num_bytes_1_pair
+	ldpxi r6p, r8p, test_math_val_b_table + num_bytes_1_pair
+	
+	
+	;sub32 r0p, r2p, r4p, r6p
+	sub r2p, r6p
+	sbc r0p, r4p
+	
+	ldpxi r4p, r8p, sub32_result_table
+	ldpxi r6p, r8p, sub32_result_table + num_bytes_1_pair
+	
+	branch_ne_32 r0p, r2p, r4p, r6p, @bad
+	
+	; Continue the loop
+	addi r8p, num_bytes_2_pair
+	;branch_ne_16_imm r8p, test_math_table_size, @loop
+	cmpi16 r8p, test_math_table_size
+	bne @loop
+	
+	
+testing_good_and_bad
+	
+@done:
+	;multi_pop_pairs r4p, r6p, r8p
+	pop_pair r8p
+	pop_pair r6p
+	pop_pair r4p
+	basic_ret
+
+
+
+
+.macro totally_immediate_add32 rAp, rBp, imm_value_32_a, imm_value_32_b
+	error_if_bad_reg_pair_name rAp
+	error_if_bad_reg_pair_name rBp
+	
+	cpyi rAp, .hiword(imm_value_32_a)
+	cpyi rBp, .loword(imm_value_32_a)
+	;add32i rAp, rBp, imm_value_32_b
+	
+	push_pair rBp
+	
+	pop_pair rBp
+	
+.endmac
+
+
+.macro totally_immediate_sub32 rAp, rBp, imm_value_32_a, imm_value_32_b
+	error_if_bad_reg_pair_name rAp
+	error_if_bad_reg_pair_name rBp
+	
+	cpyi rAp, .hiword(imm_value_32_a)
+	cpyi rBp, .loword(imm_value_32_a)
+	;sub32i rAp, rBp, imm_value_32_b
+	
+	push_pair rBp
+	
+	pop_pair rBp
+	
+.endmac
+
+
+test_32_bit_add_immediate:
+	totally_immediate_add32 r0p, r2p, test_math_val_a_0, test_math_val_b_0
+	branch_ne_32_imm r0p, r2p, add32_result_0, @bad
+	
+	totally_immediate_add32 r0p, r2p, test_math_val_a_1, test_math_val_b_1
+	branch_ne_32_imm r0p, r2p, add32_result_1, @bad
+	
+	totally_immediate_add32 r0p, r2p, test_math_val_a_2, test_math_val_b_2
+	branch_ne_32_imm r0p, r2p, add32_result_2, @bad
+	
+	totally_immediate_add32 r0p, r2p, test_math_val_a_3, test_math_val_b_3
+	branch_ne_32_imm r0p, r2p, add32_result_3, @bad
+	
+testing_good_and_bad
+	
+@done:
+	basic_ret
+
+
+
+
+test_32_bit_subtract_immediate:
+	totally_immediate_sub32 r0p, r2p, test_math_val_a_0, test_math_val_b_0
+	branch_ne_32_imm r0p, r2p, sub32_result_0, @bad
+	
+	totally_immediate_sub32 r0p, r2p, test_math_val_a_1, test_math_val_b_1
+	branch_ne_32_imm r0p, r2p, sub32_result_1, @bad
+	
+	totally_immediate_sub32 r0p, r2p, test_math_val_a_2, test_math_val_b_2
+	branch_ne_32_imm r0p, r2p, sub32_result_2, @bad
+	
+	totally_immediate_sub32 r0p, r2p, test_math_val_a_3, test_math_val_b_3
+	branch_ne_32_imm r0p, r2p, sub32_result_3, @bad
+	
+testing_good_and_bad
+	
+@done:
+	basic_ret
+
+
+
+
+
+
+
+;;test_addpb:
+;;	
+;;	; Use r2p as outer loop counter
+;;	.define i r2p
+;;	; Use r4 as inner loop counter
+;;	.define j r4
+;;	
+;;	;multi_push_pairs r4p, r6p
+;;	multi_push_regs j, convert_pair_to_two_regs{r6p}, \
+;;		convert_pair_to_two_regs{r8p}
+;;	
+;;	
+;;	
+;;;for ( int i=0; i<0x10000; ++i )
+;;	cpypi i, $0000
+;;@outer_loop:
+;;	
+;;	
+;;	;	for ( int j=0; j<0x100; ++j )
+;;	cpyi j, $00
+;;	@inner_loop:
+;;		
+;;		cpyp r0p, i
+;;		addpb r0p, j
+;;		
+;;		cpyi r6, $00
+;;		cpy r7, j
+;;		
+;;		cpyp r8p, i
+;;		addp r8p, r6p
+;;		cmpp r0p, r8p
+;;		
+;;		bne @bad
+;;		
+;;		inc j
+;;		bcc @inner_loop
+;;	
+;;	
+;;	incp i
+;;	bcc @outer_loop
+;;	
+;;testing_good_and_bad
+;;	
+;;@done:
+;;	;multi_pop_pairs r4p, r6p
+;;	multi_pop_regs j, convert_pair_to_two_regs{r6p}, \
+;;		convert_pair_to_two_regs{r8p}
+;;	basic_ret
+;;	
+;;	.undef i
+;;	.undef j
+;;
+;;
+;;test_subpb:
+;;	
+;;	; Use r2p as outer loop counter
+;;	.define i r2p
+;;	; Use r4 as inner loop counter
+;;	.define j r4
+;;	
+;;	;multi_push_pairs r4p, r6p
+;;	multi_push_regs j, convert_pair_to_two_regs{r6p}, \
+;;		convert_pair_to_two_regs{r8p}
+;;	
+;;	
+;;	
+;;;for ( int i=0; i<0x10000; ++i )
+;;	cpypi i, $0000
+;;@outer_loop:
+;;	
+;;	
+;;	;	for ( int j=0; j<0x100; ++j )
+;;	cpyi j, $00
+;;	@inner_loop:
+;;		
+;;		cpyp r0p, i
+;;		subpb r0p, j
+;;		
+;;		cpyi r6, $00
+;;		cpy r7, j
+;;		
+;;		cpyp r8p, i
+;;		subp r8p, r6p
+;;		cmpp r0p, r8p
+;;		
+;;		bne @bad
+;;		
+;;		inc j
+;;		bcc @inner_loop
+;;	
+;;	
+;;	incp i
+;;	bcc @outer_loop
+;;	
+;;testing_good_and_bad
+;;	
+;;@done:
+;;	;multi_pop_pairs r4p, r6p
+;;	multi_pop_regs j, convert_pair_to_two_regs{r6p}, \
+;;		convert_pair_to_two_regs{r8p}
+;;	basic_ret
+;;	
+;;	.undef i
+;;	.undef j
+;
+;
+;
+;;test_and_orr_inv_invp:
+;;	
+;;	.define ijp r2p
+;;	.define i reg_pair_hi{ijp}
+;;	.define j reg_pair_lo{ijp}
+;;	
+;;	push_pair r4p
+;;	
+;;	cpyi i, $00
+;;@outer_loop:
+;;	
+;;	cpyi j, $00
+;;	@inner_loop:
+;;		cpy r0, i
+;;		and r0, j
+;;		
+;;		
+;;		cpyp r4p, ijp
+;;		
+;;		
+;;		; NOR Logic AND
+;;		invp r4p
+;;		orr r4, r5
+;;		inv r4
+;;		
+;;		
+;;		cmp r0, r4
+;;		bne @bad
+;;		
+;;		
+;;		inc j
+;;		bcc @inner_loop
+;;	
+;;	
+;;	inc i
+;;	bcc @outer_loop
+;;	
+;;	
+;;testing_good_and_bad
+;;	
+;;@done:
+;;	pop_pair r4p
+;;	basic_ret
+;;	
+;;	.undef ijp
+;;	.undef i
+;;	.undef j
+;;
+;;
+;;test_xor:
+;;	
+;;	.define ijp r2p
+;;	.define i reg_pair_hi{ijp}
+;;	.define j reg_pair_lo{ijp}
+;;	
+;;	push_pair r4p
+;;	
+;;	cpyi i, $00
+;;@outer_loop:
+;;	
+;;	cpyi j, $00
+;;	@inner_loop:
+;;		cpy r0, i
+;;		xor r0, j
+;;		
+;;		
+;;		cpyp r4p, ijp
+;;		
+;;		
+;;		; NOR Logic XOR
+;;		cpy r1, r4
+;;		and r1, r5
+;;		
+;;		orr r4, r5
+;;		inv r4
+;;		
+;;		orr r4, r1
+;;		inv r4
+;;		
+;;		
+;;		cmp r0, r4
+;;		bne @bad
+;;		
+;;		
+;;		inc j
+;;		bcc @inner_loop
+;;	
+;;	
+;;	inc i
+;;	bcc @outer_loop
+;;	
+;;	
+;;testing_good_and_bad
+;;	
+;;@done:
+;;	pop_pair r4p
+;;	basic_ret
+;;	
+;;	.undef ijp
+;;	.undef i
+;;	.undef j
+;;
+;;
+;;slow_umod_16_by_8:
+;;	cpy r3, r2
+;;	cpyi r2, $00
+;;	
+;;	
+;;	; if r0p < r2p, then skip the loop
+;;	cmpp r0p, r2p
+;;	blo @done
+;;	
+;;@loop:
+;;	subp r0p, r2p
+;;	;subpb r0p, r3
+;;	cmpp r0p, r2p
+;;	bhs @loop
+;;	
+;;@done:
+;;	basic_ret
+;;
+;;
+;;;; Numerator in r0p, Denominator in r2
+;;;long_udiv_16_by_8:
+;;;	
+;;;	.define num r0p
+;;;	.define den_in r2
+;;;	.define denp r2p
+;;;	
+;;;	.define quot r4p
+;;;	.define rem r6p
+;;;	.define temp_pair r8p
+;;;	.define temp_0 reg_pair_hi{temp_pair}
+;;;	.define temp_1 reg_pair_lo{temp_pair}
+;;;	.define temp_pair_2 lr
+;;;	.define temp_2 r12
+;;;	.define i r13
+;;;	
+;;;	cmpi r2, 0
+;;;	beq @done_skip_pop
+;;;	
+;;;	
+;;;	;multi_push_pairs quot, rem, temp_pair, temp_pair_2, lr
+;;;	multi_push_pairs quot, rem, temp_pair, temp_pair_2, lr
+;;;	
+;;;	
+;;;	cpy reg_pair_lo{denp}, den_in
+;;;	cpyi den_in, 0
+;;;	
+;;;	
+;;;	; quot = 0
+;;;	; rem = 0
+;;;	cpypi quot, 0
+;;;	cpyp rem, quot
+;;;	
+;;;	; The numerator is 16-bit, and 16 - 1 is 15
+;;;	
+;;;	; for ( i = 15; i >= 0; --i )
+;;;	cpyi i, 15
+;;;@loop:
+;;;	
+;;;	; Left-shift rem by one bit
+;;;	addp rem, rem
+;;;	
+;;;	
+;;;	; temp_0 = i & 7
+;;;	cpy temp_0, i
+;;;	andi temp_0, 7
+;;;	
+;;;	
+;;;	; Use temp_1 in the "and" instruction to access specific bits of the
+;;;	; numerator and the quotient
+;;;	; temp_1 = ( 1 << temp_0 )
+;;;	; temp_1 = ( 1 << ( i & 7 ) )
+;;;	cpyi temp_1, 1
+;;;	lsl temp_1, temp_0
+;;;	
+;;;	
+;;;	; Determine whether to use the high byte or low byte of the numerator
+;;;	cmpi i, 8
+;;;	blo @i_lt_8_part_1
+;;;	
+;;;	
+;;;@i_ge_8_part_1:
+;;;	cpy temp_2, reg_pair_hi{num}
+;;;	bra @before_assigning_rem_bit
+;;;	
+;;;@i_lt_8_part_1:
+;;;	cpy temp_2, reg_pair_lo{num}
+;;;	
+;;;	
+;;;@before_assigning_rem_bit:
+;;;	; temp_2 = numerator bit i
+;;;	and temp_2, temp_1
+;;;	lsr temp_2, temp_0
+;;;	
+;;;	; rem(0) = numerator bit i
+;;;	orr reg_pair_lo{rem}, temp_2
+;;;	
+;;;	
+;;;	; if rem >= den, then do another section of code before checking
+;;;	; whether to continue the loop
+;;;	cmpp rem, denp
+;;;	blo @decrement_i
+;;;	
+;;;	; rem = rem - denp
+;;;	subp rem, denp
+;;;	
+;;;	
+;;;	; Determine whether to use the high byte or low byte of the quotient
+;;;	cmpi i, 8
+;;;	blo @i_lt_8_part_2
+;;;	
+;;;	
+;;;@i_ge_8_part_2:
+;;;	; quot bit i = 1
+;;;	orr reg_pair_hi{quot}, temp_1
+;;;	
+;;;	bra @decrement_i
+;;;	
+;;;	
+;;;@i_lt_8_part_2:
+;;;	; quot bit i = 1
+;;;	orr reg_pair_lo{quot}, temp_1
+;;;	
+;;;	
+;;;	
+;;;@decrement_i:
+;;;	dec i
+;;;	bcs @loop
+;;;	
+;;;	
+;;;@done:
+;;;	cpyp r0p, quot
+;;;	cpyp r2p, rem
+;;;	
+;;;	multi_pop_pairs quot, rem, temp_pair, temp_pair_2, lr
+;;;	
+;;;@done_skip_pop:
+;;;	basic_ret
+;;;	
+;;;	.undef num
+;;;	.undef den_in
+;;;	.undef denp
+;;;	
+;;;	.undef quot
+;;;	.undef rem
+;;;	.undef temp_pair
+;;;	.undef temp_0
+;;;	.undef temp_1
+;;;	.undef temp_pair_2
+;;;	.undef temp_2
+;;;	.undef i
+;;;
+;;;
+;;;
+;;;test_long_udiv:
+;;;	
+;;;	.define i r0p
+;;;	.define j r2
+;;;	
+;;;	push_pair lr
+;;;	
+;;;;for ( int i=0; i<0x10000; ++i )
+;;;	cpypi i, $0000
+;;;@outer_loop:
+;;;	
+;;;	;	for ( int j=0; j<0x100; ++j )
+;;;	cpyi j, $00
+;;;	@inner_loop:
+;;;		
+;;;		multi_push_regs convert_pair_to_two_regs{i}, j
+;;;		calli long_udiv_16_by_8
+;;;		;cpyi r0, $0a
+;;;		multi_pop_regs convert_pair_to_two_regs{i}, j
+;;;		
+;;;		inc j
+;;;		bcc @inner_loop
+;;;	
+;;;	incp i
+;;;	bcc @outer_loop
+;;;	
+;;;	
+;;;	
+;;;;testing_good_and_bad
+;;;	cpyi r0, $05
+;;;	
+;;;@done:
+;;;	pop_pair lr
+;;;	basic_ret
+;;;	
+;;;	.undef i
+;;;	.undef j
+;;
+;;
+;;
+;;
+;;;test_asr:
+;;;	
+;;;	.define i r0
+;;;	.define j r1
+;;;	
+;;;	;multi_push_pairs r4p, lr
+;;;	
+;;;	
+;;;; Test positive numbers
+;;;	cpyi i, $00
+;;;@outer_loop_pos:
+;;;	
+;;;	cpyi j, $00
+;;;	@inner_loop_pos:
+;;;		
+;;;		cpy r2, i
+;;;		asr r2, j
+;;;		
+;;;		cpy r3, i
+;;;		lsr r3, j
+;;;		
+;;;		cmp r2, r3
+;;;		bne @bad
+;;;		
+;;;		inc j
+;;;		bcc @inner_loop_pos
+;;;	
+;;;	inc i
+;;;	cmpi i, $80
+;;;	blo @outer_loop_pos
+;;;	
+;;;	
+;;;	
+;;;	
+;;;	;cpyi i, $80
+;;;; Test negative numbers
+;;;@outer_loop_neg:
+;;;	
+;;;	
+;;;	cpyi j, $00
+;;;	@inner_loop_neg:
+;;;		
+;;;		cpy r2, i
+;;;		asr r2, j
+;;;		neg r2
+;;;		
+;;;		
+;;;		cpy r3, i
+;;;		lsr r3, j
+;;;		
+;;;		
+;;;		cmp r2, r3
+;;;		bne @bad
+;;;		
+;;;		
+;;;		inc j
+;;;		bcc @inner_loop_neg
+;;;	
+;;;	inc i
+;;;	bcc @outer_loop_neg
+;;;	
+;;;testing_good_and_bad
+;;;	
+;;;@done:
+;;;	;multi_pop_pairs r4p, lr
+;;;	basic_ret
+;;;	
+;;;	.undef i
+;;;	.undef j
+;;
+;;;test_rol:
+;;;	
+;;;	.define i r0
+;;;	.define j r1
+;;;	
+;;;	
+;;;testing_good_and_bad
+;;;	
+;;;	
+;;;@done:
+;;;	basic_ret
+;;;	
+;;;	.undef i
+;;;	.undef j
+
+

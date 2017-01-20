@@ -1,0 +1,44 @@
+.include "../include/jolt160_ca65_macro_pack.jinc"
+.include "misc_utility_macros.jinc"
+
+
+.export other_file_test_subroutine
+.export end_simulation
+
+.segment "ROM"
+
+;test_sr_2:
+;	cpybi r1, $88
+;	
+;	basic_ret
+
+
+other_file_test_subroutine:
+	push_pair r2p
+	cpyi r2p, $ffaa
+	
+	;addp r0p, r2p
+	
+	pop_pair r2p
+	
+	
+	;push_reg reg_pair_hi{lr}
+	;strsa reg_pair_hi{lr}, sp
+	;push_reg r0
+	basic_ret
+
+
+
+
+; End RTL Simulation of the CPU by using a special instruction sequence of
+; four 0000's
+end_simulation:
+	;cpypi r2p, $99bb
+	.repeat 4
+	addi r0p, 0
+	.endrep
+	
+	
+	; Also, for testing with an actual FPGA, perform an infinite loop
+@infin:
+	bra @infin

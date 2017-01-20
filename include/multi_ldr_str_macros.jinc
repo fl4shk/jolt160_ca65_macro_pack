@@ -1,0 +1,111 @@
+.ifndef multi_ldr_str_macros_jinc
+multi_ldr_str_macros_jinc = 3
+
+
+
+; Maximum number of registers allowed to be used with multi_ldr, multi_str, ; etc.
+.define __multi_ldst_all_regs \
+	some_reg_0, some_reg_1, some_reg_2, some_reg_3, some_reg_4, \
+	some_reg_5, some_reg_6, some_reg_7, some_reg_8, some_reg_9, \
+	some_reg_10, some_reg_11, some_reg_12, some_reg_13
+.define __multi_ldst_continue_regs \
+	some_reg_1, some_reg_2, some_reg_3, some_reg_4, some_reg_5, \
+	some_reg_6, some_reg_7, some_reg_8, some_reg_9, some_reg_10, \
+	some_reg_11, some_reg_12, some_reg_13
+.define __innards_multi_ldst_continue_ldst_regs \
+	some_reg_2, some_reg_3, some_reg_4, some_reg_5, some_reg_6, \
+	some_reg_7, some_reg_8, some_reg_9, some_reg_10, some_reg_11, \
+	some_reg_12, some_reg_13
+
+
+
+
+; Macro used internally by multi_ldr, multi_ldrxi, etc.
+.macro _load_multi_regs_innards base_pair, index, \
+	__multi_ldst_continue_regs
+.if ( .blank(base_pair) .or .blank(index) .or .blank(some_reg_1) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	ldrxi some_reg_1, base_pair, index
+.endif
+	_load_multi_regs_innards base_pair, index + num_bytes_1_reg, \
+		__innards_multi_ldst_continue_ldst_regs
+.endmac
+
+
+; Macro used by internally multi_str, multi_strxi, etc.
+.macro _store_multi_regs_innards base_pair, index, \
+	__multi_ldst_continue_regs
+.if ( .blank(base_pair) .or .blank(index) .or .blank(some_reg_1) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	strxi some_reg_1, base_pair, index
+.endif
+	_store_multi_regs_innards base_pair, index + num_bytes_1_reg, \
+		__innards_multi_ldst_continue_ldst_regs
+.endmac
+
+
+
+
+
+; Pseudo block move (load-reg version)
+.macro multi_ldr base_pair, __multi_ldst_all_regs
+.if ( .blank(base_pair) .or .blank(some_reg_0) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	ldr some_reg_0, base_pair
+.endif
+	_load_multi_regs_innards base_pair, num_bytes_1_reg, \
+		__multi_ldst_continue_regs
+.endmac
+
+; Pseudo block move (store-reg version)
+.macro multi_str base_pair, __multi_ldst_all_regs
+.if ( .blank(base_pair) .or .blank(some_reg_0) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	str some_reg_0, base_pair
+.endif
+	_store_multi_regs_innards base_pair, num_bytes_1_reg, \
+		__multi_ldst_continue_regs
+.endmac
+
+
+
+
+
+; Immediate indexed psuedo block move (load-reg version)
+.macro multi_ldrxi base_pair, index, __multi_ldst_all_regs
+.if ( .blank(base_pair) .or .blank(some_reg_0) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	ldrxi some_reg_0, base_pair, index
+.endif
+	_load_multi_regs_innards base_pair, index + num_bytes_1_reg, \
+		__multi_ldst_continue_regs
+.endmac
+
+
+; Immediate indexed pseudo block move (store-reg version)
+.macro multi_strxi base_pair, index, __multi_ldst_all_regs
+.if ( .blank(base_pair) .or .blank(some_reg_0) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	strxi some_reg_0, base_pair, index
+.endif
+	_store_multi_regs_innards base_pair, index + num_bytes_1_reg, \
+		__multi_ldst_continue_regs
+.endmac
+
+
+
+
+
+.endif		; multi_ldr_str_macros_jinc
