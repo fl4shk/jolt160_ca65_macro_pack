@@ -4,6 +4,104 @@ multi_ldp_stp_macros_jinc = 3
 
 .define convert_pair_to_two_regs( rAp ) reg_pair_hi{rAp}, reg_pair_lo{rAp}
 
+; Maximum number of reg pairs allowed to be used with multi_ldp, multi_stp, ; etc.
+.define __multi_ldst_all_pairs \
+	some_pair_0, some_pair_2, some_pair_4, some_pair_6, some_pair_8, \
+	some_pair_10, some_pair_12, some_pair_14
+.define __multi_ldst_continue_pairs \
+	some_pair_2, some_pair_4, some_pair_6, some_pair_8, some_pair_10, \
+	some_pair_12, some_pair_14
+.define __innards_multi_ldst_continue_ldst_pairs \
+	some_pair_4, some_pair_6, some_pair_8, some_pair_10, some_pair_12, \
+	some_pair_14
+
+
+
+
+; Macro used internally by multi_ldp, multi_ldpxi, etc.
+.macro _load_multi_pairs_innards base_pair, index, \
+	__multi_ldst_continue_pairs
+.if ( .blank(base_pair) .or .blank(index) .or .blank(some_pair_2) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	ldpxi some_pair_2, base_pair, index
+	;ldrxi reg_pair_hi{some_pair_2}, base_pair, index
+	;ldrxi reg_pair_lo{some_pair_2}, base_pair, index + num_bytes_1_reg
+.endif
+	_load_multi_pairs_innards base_pair, index + num_bytes_1_pair, \
+		__innards_multi_ldst_continue_ldst_pairs
+.endmac
+
+; Macro used by internally multi_stp, multi_stpxi, etc.
+.macro _store_multi_pairs_innards base_pair, index, \
+	__multi_ldst_continue_pairs
+.if ( .blank(base_pair) .or .blank(index) .or .blank(some_pair_2) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	stpxi some_pair_2, base_pair, index
+	;strxi reg_pair_hi{some_pair_2}, base_pair, index
+	;strxi reg_pair_lo{some_pair_2}, base_pair, index + num_bytes_1_reg
+.endif
+	_store_multi_pairs_innards base_pair, index + num_bytes_1_pair, \
+		__innards_multi_ldst_continue_ldst_pairs
+.endmac
+
+
+
+
+
+; Pseudo block move (load-pair version)
+.macro multi_ldp base_pair, __multi_ldst_all_pairs
+.if ( .blank(base_pair) .or .blank(some_pair_0) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	ldp some_pair_0, base_pair
+.endif
+	_load_multi_pairs_innards base_pair, num_bytes_1_pair, \
+		__multi_ldst_continue_pairs
+.endmac
+
+; Pseudo block move (store-pair version)
+.macro multi_stp base_pair, __multi_ldst_all_pairs
+.if ( .blank(base_pair) .or .blank(some_pair_0) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	stp some_pair_0, base_pair
+.endif
+	_store_multi_pairs_innards base_pair, num_bytes_1_pair, \
+		__multi_ldst_continue_pairs
+.endmac
+
+
+
+; Immediate indexed pseudo block move (load-pair version)
+.macro multi_ldpxi base_pair, index, __multi_ldst_all_pairs
+.if ( .blank(base_pair) .or .blank(some_pair_0) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	ldpxi some_pair_0, base_pair, index
+.endif
+	_load_multi_pairs_innards base_pair, index + num_bytes_1_pair, \
+		__multi_ldst_continue_pairs
+.endmac
+
+
+; Immediate indexed pseudo block move (store-pair version)
+.macro multi_stpxi base_pair, index, __multi_ldst_all_pairs
+.if ( .blank(base_pair) .or .blank(some_pair_0) )
+	; At least one required parameter is empty
+	.exitmacro
+.else
+	stpxi some_pair_0, base_pair, index
+.endif
+	_store_multi_pairs_innards base_pair, index + num_bytes_1_pair, \
+		__multi_ldst_continue_pairs
+.endmac
 
 
 

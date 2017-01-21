@@ -225,7 +225,7 @@ jolt160_ca65_macro_pack_jinc = 3
 	error_if_bad_reg_pair_name rCp, ig3_op
 	
 	.dbyt encode_ig3_id{instr_g3_id} | encode_ig3_op{ig3_op} \
-		| encode_ig3_rA{encode_reg_pair{.ident(reg_pair_hi{rAp})}} \
+		| encode_ig3_rA{.ident(reg_pair_hi{rAp})} \
 		| encode_ig3_rBp{encode_reg_pair{.ident(rBp)}} \
 		| encode_ig3_rCp{encode_reg_pair{.ident(rCp)}}
 .endmac
@@ -512,14 +512,14 @@ jolt160_ca65_macro_pack_jinc = 3
 .endmac
 
 	; 16-bit Push/pop style instructions:
-	; (Add 1 the reg pair rBp, then LoaD contents into reg pair rAp from
+	; (Add 2 the reg pair rBp, then LoaD contents into reg pair rAp from
 	; memory at address contained in reg pair rBp)
 .macro ldpab rAp, rBp
 	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_ldpab , rAp, rBp
 .endmac
 
 	; (STore reg Pair rAp to memory at address contained in reg pair rBp,
-	; then Subtract 1 from the reg pair rBp)
+	; then Subtract 2 from the reg pair rBp)
 .macro stpsa rAp, rBp
 	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_stpsa , rAp, rBp
 .endmac
@@ -850,6 +850,27 @@ jolt160_ca65_macro_pack_jinc = 3
 .endmac
 .macro pop_flags
 	ldfab sp
+.endmac
+
+
+.macro multi_push_pairs __multi_ldst_all_pairs
+.if ( .blank(some_pair_0) )
+	; Required parameter is blank
+	.exitmacro
+.else
+	push_pair some_pair_0
+	multi_push_pairs __multi_ldst_continue_pairs
+.endif
+.endmac
+
+.macro multi_pop_pairs __multi_ldst_all_pairs
+.if ( .blank(some_pair_0) )
+	; Required parameter is blank
+	.exitmacro
+.else
+	multi_pop_pairs __multi_ldst_continue_pairs
+	pop_pair some_pair_0
+.endif
 .endmac
 
 

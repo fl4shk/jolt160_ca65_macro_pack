@@ -45,7 +45,7 @@
 
 .macro testing_good_and_bad
 @good:
-	cpybi r0, $01
+	cpybi r0, $22
 	bra @done
 	
 @bad:
@@ -56,41 +56,89 @@
 
 
 test_ldst:
-	;multi_push_regs convert_pair_to_two_regs{r4p}, r6, r7, r8
+	multi_push_pairs r4p, r6p
 	
-	cpyi r2p, some_arr
-	cpyi r4p, $0002
+	@local_arr_size = $06
+	subi sp, @local_arr_size
+	
+	
+	; sp points to the NEXT free slot, but NOT the current one
+	cpy r6p, sp
+	addi r6p, $01
+	
+	
+	;cpyi r2p, some_arr
+	cpyi r2p, $0002
 	
 	cpyb r1, r0
 	cpybi r0, $33
-	cpyb r6, r0
-	
-	str r1, r2p
-	strxi r1, r2p, $0001
-	strx r1, r2p, r4p
+	cpyb r4, r0
 	
 	
-	ldr r7, r2p
-	cmp r6p, r0p
-	bne @bad
+	str r1, r6p
+	strxi r1, r6p, $0001
+	strx r1, r6p, r2p
 	
-	ldrxi r7, r2p, $0001
-	cmp r6p, r0p
-	bne @bad
 	
-	ldrx r7, r2p, r4p
-	cmp r6p, r0p
+	cpyb r5, r1
+	addi r4p, 1
+	cpyb r4, r0
+	ldr r5, r6p
+	cmp r4p, r0p
 	bne @bad
 	
 	
-	;addi r2p, $03
-	;cpyi r4p, $00
+	cpyb r5, r1
+	addi r4p, 1
+	cpyb r4, r0
+	ldrxi r5, r6p, $0001
+	cmp r4p, r0p
+	bne @bad
+	
+	cpyb r5, r1
+	addi r4p, 1
+	cpyb r4, r0
+	ldrx r5, r6p, r2p
+	cmp r4p, r0p
+	bne @bad
+	
+	
+	; r2p = $0004
+	addi r2p, $02
+	
+	stp r0p, r6p
+	stpxi r0p, r6p, $0002
+	stpx r0p, r6p, r2p
+	
+	
+	cpyb r5, r1
+	addi r4p, 1
+	cpyb r4, r0
+	ldp r4p, r6p
+	cmp r4p, r0p
+	bne @bad
+	
+	cpyb r5, r1
+	addi r4p, 1
+	cpyb r4, r0
+	ldpxi r4p, r6p, $0002
+	cmp r4p, r0p
+	bne @bad
+	
+	cpyb r5, r1
+	addi r4p, 1
+	cpyb r4, r0
+	ldpx r4p, r6p, r2p
+	cmp r4p, r0p
+	bne @bad
+	
 	
 	
 testing_good_and_bad
 	
 @done:
-	;multi_pop_regs convert_pair_to_two_regs{r4p}, r6, r7, r8
+	addi sp, @local_arr_size
+	multi_pop_pairs r4p, r6p
 	
 	basic_ret
 

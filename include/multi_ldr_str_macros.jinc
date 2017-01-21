@@ -7,15 +7,16 @@ multi_ldr_str_macros_jinc = 3
 .define __multi_ldst_all_regs \
 	some_reg_0, some_reg_1, some_reg_2, some_reg_3, some_reg_4, \
 	some_reg_5, some_reg_6, some_reg_7, some_reg_8, some_reg_9, \
-	some_reg_10, some_reg_11, some_reg_12, some_reg_13
+	some_reg_10, some_reg_11, some_reg_12, some_reg_13, some_reg_14, \
+	some_reg_15
 .define __multi_ldst_continue_regs \
 	some_reg_1, some_reg_2, some_reg_3, some_reg_4, some_reg_5, \
 	some_reg_6, some_reg_7, some_reg_8, some_reg_9, some_reg_10, \
-	some_reg_11, some_reg_12, some_reg_13
+	some_reg_11, some_reg_12, some_reg_13, some_reg_14, some_reg_15
 .define __innards_multi_ldst_continue_ldst_regs \
 	some_reg_2, some_reg_3, some_reg_4, some_reg_5, some_reg_6, \
 	some_reg_7, some_reg_8, some_reg_9, some_reg_10, some_reg_11, \
-	some_reg_12, some_reg_13
+	some_reg_12, some_reg_13, some_reg_14, some_reg_15
 
 
 
