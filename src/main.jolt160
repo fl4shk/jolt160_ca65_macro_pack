@@ -162,11 +162,13 @@ main:
 	;do_test_pair_ble_bgt -8999, -9000, 3
 	
 	cpybi r0, $09
-	calli test_ldst
-	;cpyi r4p, -20
-	;;cpyi r6p, -30
-	;;umull r4p, r6p
-	;smull r4p, r6p
+	rolc r0p
+	
+	;;calli test_ldst
+	;;;cpyi r4p, -20
+	;;;;cpyi r6p, -30
+	;;;;umull r4p, r6p
+	;;;smull r4p, r6p
 	
 	
 ;@load_results:

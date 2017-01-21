@@ -359,10 +359,10 @@ jolt160_ca65_macro_pack_jinc = 3
 	; Bit rotating instructions that use carry as bit 16 for a 17-bit
 	; rotate of { carry, rAp } by one bit:
 .macro rolc rAp
-	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_rol, rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_rolc, rAp
 .endmac
 .macro rorc rAp
-	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_ror, rAp
+	gen_grp_2_instr_rAp instr_grp_2_oper::instr_g2_op_rorc, rAp
 .endmac
 
 	; Call instruction (Description:  sets the link register to the return

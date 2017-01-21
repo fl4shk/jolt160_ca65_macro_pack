@@ -12,7 +12,6 @@
 .export sub32_result_table
 
 .export test_ldst
-.export test_ldst_and_push_pop
 
 .export test_32_bit_add
 .export test_32_bit_subtract
@@ -143,12 +142,12 @@ testing_good_and_bad
 	basic_ret
 
 
-test_ldst_and_push_pop:
-	cpyi r4p, $4455
-	cpybi r6, $66
-	
-	; Tail call optimization
-	jumpi test_ldst
+;test_ldst_and_push_pop:
+;	cpyi r4p, $4455
+;	cpybi r6, $66
+;	
+;	; Tail call optimization
+;	jumpi test_ldst
 
 
 
