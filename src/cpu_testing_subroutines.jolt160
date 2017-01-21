@@ -62,13 +62,13 @@ test_ldst:
 	cpyi r4p, $0002
 	
 	cpyb r1, r0
-	cpybi r0, $00
+	cpybi r0, $33
+	cpyb r6, r0
 	
 	str r1, r2p
 	strxi r1, r2p, $0001
 	strx r1, r2p, r4p
 	
-	cpybi r6, $00
 	
 	ldr r7, r2p
 	cmp r6p, r0p
@@ -81,6 +81,11 @@ test_ldst:
 	ldrx r7, r2p, r4p
 	cmp r6p, r0p
 	bne @bad
+	
+	
+	;addi r2p, $03
+	;cpyi r4p, $00
+	
 	
 testing_good_and_bad
 	

@@ -151,30 +151,27 @@ main:
 	;do_test_pair_blo_bhs 30384, 30384, 5
 	;do_test_pair_blo_bhs 30385, 30384, 6
 	
-	
-	do_test_pair_blt_bge 3000, -3000, 0
-	do_test_pair_blt_bge -9001, -9000, 1
-	do_test_pair_blt_bge -9000, -9000, 2
-	do_test_pair_blt_bge -8999, -9000, 3
+	;do_test_pair_blt_bge 3000, -3000, 0
+	;do_test_pair_blt_bge -9001, -9000, 1
+	;do_test_pair_blt_bge -9000, -9000, 2
+	;do_test_pair_blt_bge -8999, -9000, 3
 	
 	;do_test_pair_ble_bgt 3000, -3000, 0
 	;do_test_pair_ble_bgt -9001, -9000, 1
 	;do_test_pair_ble_bgt -9000, -9000, 2
 	;do_test_pair_ble_bgt -8999, -9000, 3
 	
+	calli test_ldst
 	
-@load_results:
-	push_pair r10p
-	cpyi r10p, branch_test_result_arr
-	ldrxi r0, r10p, 0
-	ldrxi r1, r10p, 1
-	ldrxi r2, r10p, 2
-	ldrxi r3, r10p, 3
-	ldrxi r4, r10p, 4
-	ldrxi r5, r10p, 5
-	ldrxi r6, r10p, 6
-	ldrxi r7, r10p, 7
-	pop_pair r10p
+	
+;@load_results:
+;	push_pair r10p
+;	cpyi r10p, branch_test_result_arr
+;	ldpxi r0p, r10p, 0
+;	ldpxi r2p, r10p, 2
+;	ldpxi r4p, r10p, 4
+;	ldpxi r6p, r10p, 6
+;	pop_pair r10p
 	
 	
 @done:

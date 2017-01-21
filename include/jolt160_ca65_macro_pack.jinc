@@ -225,7 +225,7 @@ jolt160_ca65_macro_pack_jinc = 3
 	error_if_bad_reg_pair_name rCp, ig3_op
 	
 	.dbyt encode_ig3_id{instr_g3_id} | encode_ig3_op{ig3_op} \
-		| encode_ig3_rA{encode_reg_pair{.ident(rAp)}} \
+		| encode_ig3_rA{encode_reg_pair{.ident(reg_pair_hi{rAp})}} \
 		| encode_ig3_rBp{encode_reg_pair{.ident(rBp)}} \
 		| encode_ig3_rCp{encode_reg_pair{.ident(rCp)}}
 .endmac
@@ -280,7 +280,7 @@ jolt160_ca65_macro_pack_jinc = 3
 	.dbyt encode_ig5_ihi_id{instr_g5_ihi_id} \
 		| encode_ig5_ihi_op{ig5_op} \
 		| encode_ig5_ihi_rA{.ident(reg_pair_hi{rAp})} \
-		| encode_ig5_ihi_rBp{.ident(reg_pair_hi{rBp})}
+		| encode_ig5_ihi_rBp{encode_reg_pair{.ident(rBp)}}
 	.dbyt .loword(imm_value_16)
 .endmac
 
@@ -657,13 +657,8 @@ jolt160_ca65_macro_pack_jinc = 3
 ; Encoding:  1110 00oo oaaa abbb   iiii iiii jjjj jjjj
 
 	; Extended copy instructions:
-	; (COPY Pair Immediate, which sets the a register pair rAp to a
-	; 16-bit value in one instruction, but in twice the number of
-	; cycles due to using more than two bytes [can be used a as a jump
-	; immediate by copying a 16-bit immediate value to the pc] [this
-	; instruction ONLY has an advantage over using two successive cpyi
-	; instructions when used to copy a 16-bit immediate value to the
-	; pc])
+	; (COPY Immediate, which sets the a register pair rAp to a 16-bit value
+	; in one instruction)
 .macro cpyi rAp, imm_value_16
 	;error_if_bad_reg_pair_name rAp
 	gen_grp_5_instr_rAp instr_grp_5_oper::instr_g5_op_cpyi, rAp, \
