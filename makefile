@@ -2,10 +2,8 @@
 
 # start stuff
 
-# Edit these directories if more are needed.  Order is ASM, C++, C.
+# Edit these directories if more are needed.
 SDIRS		:=	$(CURDIR) src
-#CPPDIRS		:=	$(CURDIR) 
-#CDIRS		:=	$(CURDIR) 
 
 # The linker configuration file name
 LDCFG=ldconfig.cfg
@@ -38,7 +36,7 @@ ASFILES		:=	$(foreach dir,$(SDIRS),$(notdir $(wildcard $(dir)/*.jolt160)))
 ASOBJS=$(ASFILES:.jolt160=.o)
 #ASLSTS=$(ASFILES:.jolt160=.lst)
 
-all:  all_pre $(ASOBJS)
+all: all_pre $(ASOBJS)
 	@#$(call LINK, objs/*.o) && ./tools/dump_readmemh_input.sh
 	$(call LINK, objs/*.o) && ./tools/dump_readmemh_input.sh && ./tools/dump_readmemh_input_16.sh
 

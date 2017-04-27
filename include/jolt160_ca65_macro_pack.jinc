@@ -455,11 +455,11 @@ jolt160_ca65_macro_pack_jinc = 3
 .endmac
 	; (Unsigned MULtiplies rAp and rBp and stores 32-bit result in r0p:r2p)
 .macro umull rAp, rBp
-	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_umull , rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_umull, rAp, rBp
 .endmac
 	; (Signed MULtiplies rAp and rBp and stores 32-bit result in r0p:r2p)
 .macro smull rAp, rBp
-	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_smull , rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_smull, rAp, rBp
 .endmac
 
 	; Bitwise instructions with two reg pair operands:
@@ -468,7 +468,7 @@ jolt160_ca65_macro_pack_jinc = 3
 .endmac
 	; (same thing as "and" but only affects flags)
 .macro tst rAp, rBp
-	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_tst , rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_tst, rAp, rBp
 .endmac
 .macro orr rAp, rBp
 	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_orr, rAp, rBp
@@ -504,24 +504,24 @@ jolt160_ca65_macro_pack_jinc = 3
 	; 16-bit Load/store instructions:
 	; (LoaD contents into reg Pair rAp from memory at address in rBp)
 .macro ldp rAp, rBp
-	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_ldp , rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_ldp, rAp, rBp
 .endmac
 	; (STore reg Pair rAp contents to memory at address in rBp)
 .macro stp rAp, rBp
-	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_stp , rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_stp, rAp, rBp
 .endmac
 
 	; 16-bit Push/pop style instructions:
 	; (Add 2 the reg pair rBp, then LoaD contents into reg pair rAp from
 	; memory at address contained in reg pair rBp)
 .macro ldpab rAp, rBp
-	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_ldpab , rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_ldpab, rAp, rBp
 .endmac
 
 	; (STore reg Pair rAp to memory at address contained in reg pair rBp,
 	; then Subtract 2 from the reg pair rBp)
 .macro stpsa rAp, rBp
-	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_stpsa , rAp, rBp
+	gen_grp_2_instr_rAp_rBp instr_grp_2_oper::instr_g2_op_stpsa, rAp, rBp
 .endmac
 
 

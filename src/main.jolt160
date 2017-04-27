@@ -90,7 +90,7 @@ gen_branch_test_subroutine test_pair_ble_bgt, "ble", "bgt", $22, $aa, \
 	calli tester_subroutine
 	
 	push_pair r4p
-	cpyi r4p, branch_test_result_arr
+	cpyi r4p, test_result_arr
 	strxi r0, r4p, result_store_index
 	pop_pair r4p
 .endmac
@@ -102,7 +102,7 @@ gen_branch_test_subroutine test_pair_ble_bgt, "ble", "bgt", $22, $aa, \
 	calli tester_subroutine
 	
 	push_pair r4p
-	cpyi r4p, branch_test_result_arr
+	cpyi r4p, test_result_arr
 	strxi r0, r4p, result_store_index
 	pop_pair r4p
 .endmac
@@ -151,39 +151,84 @@ main:
 	;do_test_pair_blo_bhs 30384, 30384, 5
 	;do_test_pair_blo_bhs 30385, 30384, 6
 	
+	
 	;do_test_pair_blt_bge 3000, -3000, 0
 	;do_test_pair_blt_bge -9001, -9000, 1
 	;do_test_pair_blt_bge -9000, -9000, 2
 	;do_test_pair_blt_bge -8999, -9000, 3
+	;
+	;;do_test_pair_ble_bgt 3000, -3000, 0
+	;;do_test_pair_ble_bgt -9001, -9000, 1
+	;;do_test_pair_ble_bgt -9000, -9000, 2
+	;;do_test_pair_ble_bgt -8999, -9000, 3
+	;
+	;do_test_pair_ble_bgt 3000, -3000, 4
+	;do_test_pair_ble_bgt -9001, -9000, 5
+	;do_test_pair_ble_bgt -9000, -9000, 6
+	;do_test_pair_ble_bgt -8999, -9000, 7
+	;
+	;calli load_test_results
 	
-	;do_test_pair_ble_bgt 3000, -3000, 0
-	;do_test_pair_ble_bgt -9001, -9000, 1
-	;do_test_pair_ble_bgt -9000, -9000, 2
-	;do_test_pair_ble_bgt -8999, -9000, 3
-	
-	cpybi r0, $09
-	rolc r0p
-	
-	;;calli test_ldst
-	;;;cpyi r4p, -20
-	;;;;cpyi r6p, -30
-	;;;;umull r4p, r6p
-	;;;smull r4p, r6p
+	;do_test_pair_blt_bge $7fff, $8000, 0
+	;do_test_pair_blt_bge $7fff, $8001, 1
+	do_test_pair_blt_bge 32767, -32767, 0
+	do_test_pair_blt_bge $7fff, $8000, 1
+	do_test_pair_blt_bge $7fff, $7fff, 2
+	do_test_pair_blt_bge $7fff, $7ffe, 3
+	do_test_pair_blt_bge $7ffa, $7ffd, 4
 	
 	
-;@load_results:
-;	push_pair r10p
-;	cpyi r10p, branch_test_result_arr
-;	ldpxi r0p, r10p, 0
-;	ldpxi r2p, r10p, 2
-;	ldpxi r4p, r10p, 4
-;	ldpxi r6p, r10p, 6
-;	pop_pair r10p
+	;calli test_ldst
+	;calli test_umull_and_smull
 	
+	
+	;calli test_32_bit_add
+	;bra @done
+	
+	calli load_test_results
 	
 @done:
 	jumpi end_simulation
 
+
+
+load_test_results:
+	push_pair r10p
+	cpyi r10p, test_result_arr
+	ldpxi r0p, r10p, 0
+	ldpxi r2p, r10p, 2
+	ldpxi r4p, r10p, 4
+	ldpxi r6p, r10p, 6
+	pop_pair r10p
+	basic_ret
+
+
+test_umull_and_smull:
+	cpyi r0p, -20
+	cpyi r2p, -30
+	calli do_umull_and_smull
+	
+	cpyi r10p, test_result_arr
+	multi_stp r10p, r0p, r2p, r4p, r6p
+	
+	basic_ret
+
+
+do_umull_and_smull:
+	;cpyi r4p, -20
+	;cpyi r6p, -30
+	cpy r4p, r0p
+	cpy r6p, r2p
+	
+	umull r4p, r6p
+	multi_push_pairs r0p, r2p
+	
+	smull r4p, r6p
+	cpy r4p, r0p
+	cpy r6p, r2p
+	multi_pop_pairs r0p, r2p
+	
+	basic_ret
 
 
 

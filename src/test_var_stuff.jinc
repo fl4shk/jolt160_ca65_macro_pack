@@ -9,6 +9,6 @@ some_arr_size = 20
 
 test_math_arr_size = 16
 
-branch_test_result_arr_size = 16
+test_result_arr_size = 16
 
 .endif		; test_var_stuff_jinc

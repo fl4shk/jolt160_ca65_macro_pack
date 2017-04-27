@@ -142,13 +142,6 @@ testing_good_and_bad
 	basic_ret
 
 
-;test_ldst_and_push_pop:
-;	cpyi r4p, $4455
-;	cpybi r6, $66
-;	
-;	; Tail call optimization
-;	jumpi test_ldst
-
 
 
 
